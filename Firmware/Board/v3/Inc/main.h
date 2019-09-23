@@ -67,7 +67,7 @@
 
 /* Private define ------------------------------------------------------------*/
 #define TIM_1_8_CLOCK_HZ 168000000
-#define TIM_1_8_PERIOD_CLOCKS 3500
+#define TIM_1_8_PERIOD_CLOCKS 10192
 #define TIM_1_8_DEADTIME_CLOCKS 20
 #define TIM_APB1_CLOCK_HZ 84000000
 #define TIM_APB1_PERIOD_CLOCKS 4096
@@ -168,8 +168,8 @@
 //TODO: make this come automatically out of CubeMX somehow
 #define TIM_TIME_BASE TIM14
 
-#define CURRENT_MEAS_PERIOD ( (float)2*TIM_1_8_PERIOD_CLOCKS*(TIM_1_8_RCR+1) / (float)TIM_1_8_CLOCK_HZ )
-#define CURRENT_MEAS_HZ ( (float)(TIM_1_8_CLOCK_HZ) / (float)(2*TIM_1_8_PERIOD_CLOCKS*(TIM_1_8_RCR+1)) )
+#define CURRENT_MEAS_PERIOD ((float)(2*TIM_1_8_PERIOD_CLOCKS)/(float)TIM_1_8_CLOCK_HZ)
+#define CURRENT_MEAS_HZ (TIM_1_8_CLOCK_HZ/(2*TIM_1_8_PERIOD_CLOCKS))
 
 #if HW_VERSION_VOLTAGE >= 48
 #define VBUS_S_DIVIDER_RATIO 19.0f
