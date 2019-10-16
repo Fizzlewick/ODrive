@@ -102,10 +102,49 @@ bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate)
     return false;
 }
 
+void Controller::start_encoder_mapping_calibration() 
+{
+    if (axis_->error_ == Axis::ERROR_NONE) 
+    {
+        axis_->encoder_.clear_mapping();
+        encoder_mapping_.calib_mapping = true;
+    }
+}
+
+bool Controller::encoder_mapping_calibration(float pos_estimate, float vel_estimate) 
+{
+    if (encoder_mapping_.calib_mapping) 
+    {
+        float pos_err = encoder_mapping_.index - pos_estimate;
+        if (fabsf(pos_err)      <= encoder_mapping_.calib_pos_threshold &&
+            fabsf(vel_estimate) <  encoder_mapping_.calib_vel_threshold) 
+        {
+            axis_->encoder_.update_mapping(encoder_mapping_.index++);
+        }
+        if (encoder_mapping_.index < axis_->encoder_.config_.cpr) // TODO: remove the dependency on encoder CPR
+        {
+            set_pos_setpoint(encoder_mapping_.index, 0.0f, 0.0f);
+            return false;
+        } 
+        else 
+        {
+            encoder_mapping_.index = 0;
+            set_pos_setpoint(0.0f, 0.0f, 0.0f);  // Send the motor home
+            encoder_mapping_.calib_mapping = false;
+            axis_->encoder_.enable_mapping();  // We're good to go, enable the mapping            
+            return true;
+        }
+    }
+    return false;
+}
+
+
 bool Controller::update(float pos_estimate, float vel_estimate, float* current_setpoint_output) {
     // Only runs if anticogging_.calib_anticogging is true; non-blocking
     anticogging_calibration(pos_estimate, vel_estimate);
     float anticogging_pos = pos_estimate;
+
+    encoder_mapping_calibration(pos_estimate, vel_estimate);
 
     // Trajectory control
     if (config_.control_mode == CTRL_MODE_TRAJECTORY_CONTROL) {

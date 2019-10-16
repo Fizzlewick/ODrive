@@ -50,6 +50,9 @@ public:
     void start_anticogging_calibration();
     bool anticogging_calibration(float pos_estimate, float vel_estimate);
 
+    void start_encoder_mapping_calibration();
+    bool encoder_mapping_calibration(float pos_estimate, float vel_estimate);
+
     bool update(float pos_estimate, float vel_estimate, float* current_setpoint);
 
     Config_t& config_;
@@ -76,6 +79,20 @@ public:
         .calib_anticogging = false,
         .calib_pos_threshold = 1.0f,
         .calib_vel_threshold = 1.0f,
+    };
+
+    // Encoder mapping
+    typedef struct {
+        int index;
+        bool calib_mapping;
+        float calib_pos_threshold;
+        float calib_vel_threshold;        
+    } EncoderMapping_t;
+    EncoderMapping_t encoder_mapping_ = {
+        .index = 0,
+        .calib_mapping = false,
+        .calib_pos_threshold = 2.0f,
+        .calib_vel_threshold = 3.0f,
     };
 
     Error_t error_ = ERROR_NONE;
@@ -120,7 +137,8 @@ public:
                                    "current_setpoint"),
             make_protocol_function("move_to_pos", *this, &Controller::move_to_pos, "pos_setpoint"),
             make_protocol_function("move_incremental", *this, &Controller::move_incremental, "displacement", "from_goal_point"),
-            make_protocol_function("start_anticogging_calibration", *this, &Controller::start_anticogging_calibration)
+            make_protocol_function("start_anticogging_calibration", *this, &Controller::start_anticogging_calibration),
+            make_protocol_function("start_encoder_mapping_calibration", *this, &Controller::start_encoder_mapping_calibration)
         );
     }
 };

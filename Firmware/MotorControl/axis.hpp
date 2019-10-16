@@ -35,6 +35,7 @@ public:
         AXIS_STATE_CLOSED_LOOP_CONTROL = 8,  //<! run closed loop control
         AXIS_STATE_LOCKIN_SPIN = 9,       //<! run lockin spin
         AXIS_STATE_ENCODER_DIR_FIND = 10,
+        AXIS_STATE_ENCODER_ABS_TO_CPR = 11,  // SPI only, gathers many ABS samples (filtering) the uses the abs_to_cpr map
     };
 
     struct LockinConfig_t {
@@ -58,6 +59,7 @@ public:
         bool startup_encoder_index_search = false; //<! run encoder index search after startup, skip otherwise
                                                 // this only has an effect if encoder.config.use_index is also true
         bool startup_encoder_offset_calibration = false; //<! run encoder offset calibration after startup, skip otherwise
+        bool startup_encoder_abs_to_cpr = false;
         bool startup_closed_loop_control = false; //<! enable closed loop control after calibration/startup
         bool startup_sensorless_control = false; //<! enable sensorless control after calibration/startup
         bool enable_step_dir = false; //<! enable step/dir input after calibration
@@ -112,6 +114,8 @@ public:
     bool check_PSU_brownout();
     bool do_checks();
     bool do_updates();
+    
+    bool is_disarm_allowed();
 
     void watchdog_feed();
     bool watchdog_check();
@@ -236,6 +240,7 @@ public:
                 make_protocol_property("startup_motor_calibration", &config_.startup_motor_calibration),
                 make_protocol_property("startup_encoder_index_search", &config_.startup_encoder_index_search),
                 make_protocol_property("startup_encoder_offset_calibration", &config_.startup_encoder_offset_calibration),
+                make_protocol_property("startup_encoder_abs_to_cpr", &config_.startup_encoder_abs_to_cpr),
                 make_protocol_property("startup_closed_loop_control", &config_.startup_closed_loop_control),
                 make_protocol_property("startup_sensorless_control", &config_.startup_sensorless_control),
                 make_protocol_property("enable_step_dir", &config_.enable_step_dir),

@@ -157,12 +157,23 @@ void Axis::set_step_dir_active(bool active) {
     }
 }
 
+bool Axis::is_disarm_allowed()
+{
+    if (current_state_ == AXIS_STATE_IDLE ||
+        current_state_ == AXIS_STATE_ENCODER_ABS_TO_CPR)
+    {
+        return true;
+    }
+
+    return false;
+}
+
 // @brief Do axis level checks and call subcomponent do_checks
 // Returns true if everything is ok.
 bool Axis::do_checks() {
     if (!brake_resistor_armed)
         error_ |= ERROR_BRAKE_RESISTOR_DISARMED;
-    if ((current_state_ != AXIS_STATE_IDLE) && (motor_.armed_state_ == Motor::ARMED_STATE_DISARMED))
+    if ((is_disarm_allowed() == false) && (motor_.armed_state_ == Motor::ARMED_STATE_DISARMED))
         // motor got disarmed in something other than the idle loop
         error_ |= ERROR_MOTOR_DISARMED;
     if (!(vbus_voltage >= board_config.dc_bus_undervoltage_trip_level))
@@ -343,6 +354,8 @@ void Axis::run_state_machine_loop() {
                     task_chain_[pos++] = AXIS_STATE_ENCODER_INDEX_SEARCH;
                 if (config_.startup_encoder_offset_calibration)
                     task_chain_[pos++] = AXIS_STATE_ENCODER_OFFSET_CALIBRATION;
+                if(config_.startup_encoder_abs_to_cpr && encoder_.config_.pre_calibrated)
+                    task_chain_[pos++] = AXIS_STATE_ENCODER_ABS_TO_CPR;
                 if (config_.startup_closed_loop_control)
                     task_chain_[pos++] = AXIS_STATE_CLOSED_LOOP_CONTROL;
                 else if (config_.startup_sensorless_control)
@@ -396,6 +409,13 @@ void Axis::run_state_machine_loop() {
                 status = encoder_.run_offset_calibration();
             } break;
 
+            case AXIS_STATE_ENCODER_ABS_TO_CPR: {
+                safety_critical_disarm_motor_pwm(motor_);
+                status = encoder_.run_abs_to_cpr();
+                if (status)
+                    status = motor_.arm();
+            } break;            
+
             case AXIS_STATE_LOCKIN_SPIN: {
                 if (!motor_.is_calibrated_ || motor_.config_.direction==0)
                     goto invalid_state_label;
@@ -438,6 +458,7 @@ void Axis::run_state_machine_loop() {
         if (!status)
             current_state_ = AXIS_STATE_IDLE;
         else
+            // todo_mrb: this is a crazy unsafe memcpy (overlapping), fix up
             memcpy(task_chain_, task_chain_ + 1, sizeof(task_chain_) - sizeof(task_chain_[0]));
     }
 }
